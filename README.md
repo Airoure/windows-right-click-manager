@@ -4,13 +4,13 @@
 
 ## 当前状态
 
-0.1.0 开发预览。界面已确认，真实扫描和系统操作已接入。已通过前端构建、7 项 Rust 测试及 Windows 可执行构建。
+0.2.0 开发预览。默认显示“实际菜单”：手动右键一次，读取资源管理器实际弹出的菜单文字、顺序、灰色状态、分隔线和已展开的子菜单。原有扫描与管理入口位于“注册项”。
 
 原生视觉验收、机器级 UAC 路径和真实资源管理器中的显示效果尚待人工验证，详见 [验证记录](docs/verification.md)。
 
 ## 本地使用
 
-本机已构建的预览文件：`artifacts/右键管理-0.1.0.exe`。运行时需要 Windows WebView2 Runtime，不依赖 Node.js 服务。
+本机已构建的预览文件：`artifacts/右键管理-0.2.0.exe`。运行时需要 Windows WebView2 Runtime，不依赖 Node.js 服务。
 
 使用流程和第一版支持范围见 [使用说明](docs/usage.md)。构建产物与运行时恢复数据均不提交 Git。
 
@@ -42,6 +42,7 @@ cargo test --locked -j 2 --manifest-path src-tauri/Cargo.toml
 
 - `src/`：React 界面与类型明确的 Tauri 接口。
 - `src-tauri/src/registry.rs`：扫描、类型判断、注册表快照与受限修改。
+- `src-tauri/src/capture.rs`：独立进程读取 Explorer 可见菜单的 MSAA 信息，超时退出，不执行菜单命令。
 - `src-tauri/src/service.rs`：变更、恢复和历史顺序校验。
 - `src-tauri/src/journal.rs`：本地 JSON 恢复记录。
 - `src-tauri/src/elevation.rs`：机器级操作的 UAC 辅助入口与本地管道。

@@ -17,10 +17,12 @@ import {
   X,
 } from 'lucide-react';
 import { api, native } from './api';
+import { ActualMenu } from './ActualMenu';
 import { AppIcon, Dialog, ScopeIcon } from './components';
-import type { AppData, HistoryItem, MenuEntry, NewMenu, Scope } from './types';
+import type { AppData, HistoryItem, MenuEntry, NewMenu, Scope, CapturedMenu } from './types';
 
 const scopes: { id: Scope; name: string; description: string }[] = [
+  { id: 'desktop', name: '桌面空白处', description: '读取你在桌面右键时实际看到的菜单。' },
   { id: 'all', name: '全部菜单', description: '查看各个右键位置的注册项，整理常用命令。' },
   { id: 'file', name: '文件', description: '右键点击任意文件时适用的菜单注册项。' },
   { id: 'folder', name: '文件夹', description: '右键点击文件夹本身时适用的菜单注册项。' },
@@ -48,7 +50,12 @@ type Confirmation = { type: 'toggle'; entry: MenuEntry } | { type: 'restore'; it
 
 export default function App() {
   const [data, setData] = useState<AppData | null>(null);
-  const [scope, setScope] = useState<Scope>('background');
+  const [scope, setScope] = useState<Scope>('desktop');
+  const [mode, setMode] = useState<'actual' | 'registry'>('actual');
+  const [captures, setCaptures] = useState<Partial<Record<Scope, CapturedMenu>>>({});
+  const [stale, setStale] = useState<Partial<Record<Scope, boolean>>>({});
+  const [reading, setReading] = useState(false);
+  const [readHelp, setReadHelp] = useState(false);
   const [filter, setFilter] = useState('all');
   const [query, setQuery] = useState('');
   const [view, setView] = useState<'menus' | 'history'>('menus');
@@ -112,6 +119,7 @@ export default function App() {
     setNotice(null);
     try {
       await action();
+      setStale(Object.fromEntries(scopes.map((s) => [s.id, true])));
       setNotice({ kind: 'success', text: message });
       setConfirmation(null);
       setAdding(false);
@@ -124,6 +132,22 @@ export default function App() {
       } catch (error) {
         setNotice({ kind: 'error', text: `无法刷新操作结果：${error}。请重新扫描或重启应用。` });
       }
+      setBusy(false);
+    }
+  }
+  async function readActual() {
+    setReadHelp(false);
+    setReading(true);
+    setBusy(true);
+    setNotice(null);
+    try {
+      const result = await api.capture();
+      setCaptures((previous) => ({ ...previous, [scope]: result }));
+      setStale((previous) => ({ ...previous, [scope]: false }));
+    } catch (error) {
+      setNotice({ kind: 'error', text: String(error) });
+    } finally {
+      setReading(false);
       setBusy(false);
     }
   }
@@ -149,7 +173,7 @@ export default function App() {
               <MousePointer2 />
             </span>
             <strong>右键管理</strong>
-            <span className="version">0.1.0</span>
+            <span className="version">0.2.0</span>
           </div>
           <div className="prototype-label">
             <span className="status-dot" />
@@ -172,9 +196,11 @@ export default function App() {
                 >
                   <ScopeIcon scope={s.id} />
                   <span>{s.name}</span>
-                  <span className="nav-count">
-                    {entries.filter((e) => s.id === 'all' || e.scope === s.id).length}
-                  </span>
+                  {mode === 'registry' && (
+                    <span className="nav-count">
+                      {entries.filter((e) => s.id === 'all' || e.scope === s.id).length}
+                    </span>
+                  )}
                 </button>
               ))}
             </nav>
@@ -277,155 +303,189 @@ export default function App() {
             )}
             {view === 'menus' ? (
               <>
-                <div className="toolbar">
-                  <label className="search">
-                    <Search />
-                    <input
-                      ref={search}
-                      type="search"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      placeholder="搜索菜单名称、来源或命令"
-                      aria-label="搜索菜单"
-                    />
-                    <kbd>/</kbd>
-                  </label>
+                <div className="mode-tabs" aria-label="菜单视图">
                   <button
-                    className="button secondary"
-                    disabled={!native || loading || busy}
+                    className={mode === 'actual' ? 'active' : ''}
                     onClick={() => {
-                      setNotice(null);
-                      refresh().catch((error) => setNotice({ kind: 'error', text: String(error) }));
+                      setMode('actual');
+                      setSelected(null);
                     }}
                   >
-                    <RefreshCw className={loading ? 'spinning' : ''} />
-                    {loading ? '正在扫描' : '重新扫描'}
+                    实际菜单
+                  </button>
+                  <button
+                    className={mode === 'registry' ? 'active' : ''}
+                    onClick={() => setMode('registry')}
+                  >
+                    注册项 · 停用与恢复
                   </button>
                 </div>
-                <div className="list-topline">
-                  <div className="filters" aria-label="状态筛选">
-                    {[
-                      ['all', '全部'],
-                      ['enabled', '已启用'],
-                      ['disabled', '已停用'],
-                      ['readonly', '仅查看'],
-                    ].map(([id, label]) => (
+                {mode === 'actual' ? (
+                  <ActualMenu
+                    capture={captures[scope]}
+                    stale={!!stale[scope]}
+                    reading={reading}
+                    enabled={native && !busy}
+                    entries={entries}
+                    scope={scope}
+                    onRead={() => setReadHelp(true)}
+                    onSelect={setSelected}
+                  />
+                ) : (
+                  <>
+                    <div className="toolbar">
+                      <label className="search">
+                        <Search />
+                        <input
+                          ref={search}
+                          type="search"
+                          value={query}
+                          onChange={(e) => setQuery(e.target.value)}
+                          placeholder="搜索菜单名称、来源或命令"
+                          aria-label="搜索菜单"
+                        />
+                        <kbd>/</kbd>
+                      </label>
                       <button
-                        key={id}
-                        className={filter === id ? 'active' : ''}
-                        aria-pressed={filter === id}
-                        onClick={() => setFilter(id)}
-                      >
-                        {label}
-                        {id === 'all' && <span>{inScope.length}</span>}
-                      </button>
-                    ))}
-                  </div>
-                  <span className="list-count">{visible.length} 个注册项</span>
-                </div>
-                <div className="column-head">
-                  <span>菜单名称</span>
-                  <span>来源</span>
-                  <span>启用状态</span>
-                  <span />
-                </div>
-                <div className="menu-list" aria-label="菜单列表">
-                  {loading && !data ? (
-                    <div className="empty-state">
-                      <LoaderCircle className="spinning" />
-                      <strong>正在读取本机菜单</strong>扫描不会修改系统。
-                    </div>
-                  ) : visible.length ? (
-                    visible.map((e) => (
-                      <div
-                        key={e.id}
-                        className={`menu-row ${selected === e.id ? 'selected' : ''} ${!e.enabled ? 'disabled' : ''}`}
-                        role="group"
-                        aria-label={e.name}
-                        tabIndex={0}
-                        onClick={() => setSelected(e.id)}
-                        onKeyDown={(event) => {
-                          if (
-                            event.target === event.currentTarget &&
-                            ['Enter', ' '].includes(event.key)
-                          ) {
-                            event.preventDefault();
-                            setSelected(e.id);
-                          }
+                        className="button secondary"
+                        disabled={!native || loading || busy}
+                        onClick={() => {
+                          setNotice(null);
+                          refresh().catch((error) =>
+                            setNotice({ kind: 'error', text: String(error) }),
+                          );
                         }}
                       >
-                        <div className="menu-identity">
-                          <AppIcon entry={e} />
-                          <div className="menu-text">
-                            <div className="menu-name">{e.name}</div>
-                            <div className="menu-subtitle">
-                              {scope === 'all' ? `${scopeName(e.scope)} · ` : ''}
-                              {e.kind === 'system'
-                                ? '系统基础菜单'
-                                : e.kind === 'extension'
-                                  ? '程序扩展 · 仅查看'
-                                  : !e.manageable
-                                    ? '暂不支持修改'
-                                    : e.enabled
-                                      ? '注册已启用'
-                                      : '已停用，可恢复'}
-                              {e.extended ? ' · Shift 右键' : ''}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="menu-source">{e.source}</div>
-                        {e.manageable ? (
-                          <button
-                            className="switch"
-                            role="switch"
-                            aria-checked={e.enabled}
-                            aria-label={`${e.enabled ? '停用' : '启用'} ${e.name}`}
-                            disabled={busy}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              beginToggle(e);
-                            }}
-                          />
-                        ) : (
-                          <span className="readonly-badge">
-                            <LockKeyhole />
-                            仅查看
-                          </span>
-                        )}
-                        <button
-                          className="icon-button row-detail"
-                          aria-label={`查看 ${e.name} 的详情`}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setSelected(e.id);
-                          }}
-                        >
-                          <ChevronRight />
-                        </button>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="empty-state">
-                      <Search />
-                      <strong>
-                        {query || filter !== 'all'
-                          ? '没有找到匹配的菜单'
-                          : '这个位置没有扫描到注册项'}
-                      </strong>
-                      {query || filter !== 'all'
-                        ? '试试其他关键词或切换状态筛选。'
-                        : native
-                          ? '第一版扫描常见的传统菜单位置，部分菜单可能由其他机制生成。'
-                          : '运行桌面应用后，这里会显示真实数据。'}
+                        <RefreshCw className={loading ? 'spinning' : ''} />
+                        {loading ? '正在扫描' : '重新扫描'}
+                      </button>
                     </div>
-                  )}
-                </div>
-                <div className="list-footer">
-                  <Info />
-                  <span>
-                    这里显示注册状态。菜单是否实际出现，还取决于所选对象、程序规则和资源管理器缓存。
-                  </span>
-                </div>
+                    <div className="list-topline">
+                      <div className="filters" aria-label="状态筛选">
+                        {[
+                          ['all', '全部'],
+                          ['enabled', '已启用'],
+                          ['disabled', '已停用'],
+                          ['readonly', '仅查看'],
+                        ].map(([id, label]) => (
+                          <button
+                            key={id}
+                            className={filter === id ? 'active' : ''}
+                            aria-pressed={filter === id}
+                            onClick={() => setFilter(id)}
+                          >
+                            {label}
+                            {id === 'all' && <span>{inScope.length}</span>}
+                          </button>
+                        ))}
+                      </div>
+                      <span className="list-count">{visible.length} 个注册项</span>
+                    </div>
+                    <div className="column-head">
+                      <span>菜单名称</span>
+                      <span>来源</span>
+                      <span>启用状态</span>
+                      <span />
+                    </div>
+                    <div className="menu-list" aria-label="菜单列表">
+                      {loading && !data ? (
+                        <div className="empty-state">
+                          <LoaderCircle className="spinning" />
+                          <strong>正在读取本机菜单</strong>扫描不会修改系统。
+                        </div>
+                      ) : visible.length ? (
+                        visible.map((e) => (
+                          <div
+                            key={e.id}
+                            className={`menu-row ${selected === e.id ? 'selected' : ''} ${!e.enabled ? 'disabled' : ''}`}
+                            role="group"
+                            aria-label={e.name}
+                            tabIndex={0}
+                            onClick={() => setSelected(e.id)}
+                            onKeyDown={(event) => {
+                              if (
+                                event.target === event.currentTarget &&
+                                ['Enter', ' '].includes(event.key)
+                              ) {
+                                event.preventDefault();
+                                setSelected(e.id);
+                              }
+                            }}
+                          >
+                            <div className="menu-identity">
+                              <AppIcon entry={e} />
+                              <div className="menu-text">
+                                <div className="menu-name">{e.name}</div>
+                                <div className="menu-subtitle">
+                                  {scope === 'all' ? `${scopeName(e.scope)} · ` : ''}
+                                  {e.kind === 'system'
+                                    ? '系统基础菜单'
+                                    : e.kind === 'extension'
+                                      ? '程序扩展 · 仅查看'
+                                      : !e.manageable
+                                        ? '暂不支持修改'
+                                        : e.enabled
+                                          ? '注册已启用'
+                                          : '已停用，可恢复'}
+                                  {e.extended ? ' · Shift 右键' : ''}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="menu-source">{e.source}</div>
+                            {e.manageable ? (
+                              <button
+                                className="switch"
+                                role="switch"
+                                aria-checked={e.enabled}
+                                aria-label={`${e.enabled ? '停用' : '启用'} ${e.name}`}
+                                disabled={busy}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  beginToggle(e);
+                                }}
+                              />
+                            ) : (
+                              <span className="readonly-badge">
+                                <LockKeyhole />
+                                仅查看
+                              </span>
+                            )}
+                            <button
+                              className="icon-button row-detail"
+                              aria-label={`查看 ${e.name} 的详情`}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setSelected(e.id);
+                              }}
+                            >
+                              <ChevronRight />
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="empty-state">
+                          <Search />
+                          <strong>
+                            {query || filter !== 'all'
+                              ? '没有找到匹配的菜单'
+                              : '这个位置没有扫描到注册项'}
+                          </strong>
+                          {query || filter !== 'all'
+                            ? '试试其他关键词或切换状态筛选。'
+                            : native
+                              ? '第一版扫描常见的传统菜单位置，部分菜单可能由其他机制生成。'
+                              : '运行桌面应用后，这里会显示真实数据。'}
+                        </div>
+                      )}
+                    </div>
+                    <div className="list-footer">
+                      <Info />
+                      <span>
+                        这里显示注册状态。菜单是否实际出现，还取决于所选对象、程序规则和资源管理器缓存。
+                      </span>
+                    </div>
+                  </>
+                )}
               </>
             ) : (
               <>
@@ -492,6 +552,27 @@ export default function App() {
           </span>
         </footer>
       </div>
+      {readHelp && (
+        <Dialog title="读取一次真实右键菜单" onClose={() => setReadHelp(false)}>
+          <p>
+            当前选择：<strong>{scopeName(scope)}</strong>。点击开始后，本窗口会最小化。
+          </p>
+          <ol className="capture-steps">
+            <li>在桌面或资源管理器的目标位置右键一次。</li>
+            <li>需要读取子菜单时，将鼠标移到对应项目并等待展开。</li>
+            <li>按 Esc 关闭所有菜单，工具会自动返回。</li>
+          </ol>
+          <p>请在 20 秒内完成。不必点击任何菜单命令。</p>
+          <div className="dialog-actions">
+            <button className="button secondary" onClick={() => setReadHelp(false)}>
+              取消
+            </button>
+            <button className="button primary" onClick={readActual}>
+              开始读取
+            </button>
+          </div>
+        </Dialog>
+      )}
       {entry && (
         <Dialog title="菜单详情" drawer busy={busy} onClose={() => setSelected(null)}>
           <div className="inspector">
@@ -567,25 +648,9 @@ export default function App() {
                 <p>{entry.registryPath}</p>
               </details>
             </div>
-            <div className="preview-heading">
-              <strong>菜单显示示意</strong>
-              <span>并非系统截图</span>
-            </div>
-            <div className="context-preview">
-              <div className="context-menu">
-                <div className="context-item">其他菜单项</div>
-                <div className="context-separator" />
-                <div className={`context-item ${entry.enabled ? 'highlight' : 'gone'}`}>
-                  <ScopeIcon scope={entry.scope} />
-                  <span>{entry.name}</span>
-                </div>
-                <div className="context-separator" />
-                <div className="context-item">其他菜单项</div>
-              </div>
-            </div>
             <p className="preview-hint">
               {entry.enabled
-                ? '注册已启用，实际是否显示请在资源管理器中确认。'
+                ? '注册已启用，实际显示请返回“实际菜单”重新读取确认。同名注册项仅供核对，名称相同不代表已确定来源。'
                 : '普通命令被停用后，将从相应菜单中隐藏。'}
               {entry.kind === 'extension' ? ' 一个程序扩展可能生成多个项目。' : ''}
             </p>
@@ -677,10 +742,14 @@ export default function App() {
             管理本机常见位置的传统右键菜单，所有操作记录保存在本地。
           </p>
           <ul className="help-list">
+            <li>“实际菜单”读取一次真实弹出的菜单。开始后右键、展开需要的子菜单，再按 Esc 关闭。</li>
             <li>第一版扫描 64 位的通用文件、文件夹、空白处和磁盘注册位置。</li>
             <li>已适配的普通命令可以停用、启用，并在操作历史中恢复。</li>
             <li>程序扩展、子菜单、系统基础项目暂时只提供查看。</li>
-            <li>特定扩展名或 ProgID 的菜单、Windows 11 新版菜单暂不覆盖。</li>
+            <li>
+              特定文件的实际菜单可以读取，但对应扩展名或 ProgID 注册项暂不支持管理。Windows 11
+              新版菜单暂不覆盖。
+            </li>
             <li>来源名称按执行命令推断，未加载第三方扩展代码。</li>
             <li>修改后先重新打开右键菜单；缓存未更新时可自行重启资源管理器。</li>
           </ul>
@@ -764,7 +833,7 @@ function AddDialog({
             onChange={(e) => setMenu({ ...menu, scope: e.target.value as NewMenu['scope'] })}
           >
             {scopes
-              .filter((s) => ['file', 'folder', 'background', 'drive'].includes(s.id))
+              .filter((s) => ['desktop', 'file', 'folder', 'background', 'drive'].includes(s.id))
               .map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}

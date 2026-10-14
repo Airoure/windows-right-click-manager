@@ -1,4 +1,17 @@
-export type Scope = 'all' | 'file' | 'filesystem' | 'folder' | 'background' | 'drive';
+export type Scope = 'all' | 'desktop' | 'file' | 'filesystem' | 'folder' | 'background' | 'drive';
+export interface CapturedItem {
+  name: string;
+  shortcut: string;
+  disabled: boolean;
+  separator: boolean;
+  hasSubmenu: boolean;
+  children: CapturedItem[];
+}
+export interface CapturedMenu {
+  items: CapturedItem[];
+  capturedAt: number;
+  warnings: string[];
+}
 export interface MenuEntry {
   id: string;
   name: string;

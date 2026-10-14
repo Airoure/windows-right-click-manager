@@ -1309,6 +1309,135 @@ h1 + p {
 .spinning {
   animation: spin 0.9s linear infinite;
 }
+.mode-tabs {
+  display: flex;
+  gap: 24px;
+  border-bottom: 1px solid var(--border, #e2e5e0);
+  margin-bottom: 28px;
+}
+.mode-tabs button {
+  padding: 12px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #777c73;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  cursor: pointer;
+}
+.mode-tabs button.active {
+  color: #436448;
+  border-bottom-color: #527858;
+}
+.actual-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.actual-toolbar strong {
+  font-size: 17px;
+  font-weight: 600;
+}
+.actual-toolbar p {
+  margin: 9px 0 0;
+  color: #72776d;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.actual-toolbar .button {
+  flex-shrink: 0;
+}
+.actual-rows {
+  margin: 0;
+  padding: 12px 20px;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #dfe4db;
+  border-radius: 9px;
+}
+.actual-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 49px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.actual-name {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.actual-shortcut,
+.actual-state {
+  font-size: 13px;
+  font-weight: 400;
+  color: #7c8176;
+}
+.actual-row.unavailable .actual-name {
+  color: #92998c;
+}
+.actual-row svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+.actual-separator {
+  height: 1px;
+  margin: 9px 0;
+  background: #e5e8e1;
+}
+.actual-rows.nested {
+  margin: 0 0 12px 20px;
+  padding: 5px 18px;
+  border: 0;
+  border-left: 2px solid #d5dfd0;
+  border-radius: 0;
+  background: #f8faf6;
+}
+.actual-link {
+  border: 0;
+  border-radius: 4px;
+  background: #edf3e9;
+  color: #496645;
+  font-size: 13px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.unread-submenu {
+  font-size: 13px;
+  color: #868c80;
+  margin: 0 0 12px;
+  line-height: 1.7;
+}
+.actual-empty {
+  min-height: 280px;
+  gap: 12px;
+}
+.capture-steps {
+  padding-left: 22px;
+  line-height: 2.2;
+  margin: 20px 0;
+}
+@media (max-width: 900px) {
+  .actual-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .actual-row {
+    flex-wrap: wrap;
+    padding: 9px 0;
+    gap: 10px;
+  }
+  .actual-name {
+    min-width: 50%;
+  }
+  .actual-rows {
+    padding: 8px 14px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .spinning {
     animation: none;

@@ -61,9 +61,17 @@ impl Target {
     }
 }
 
-pub const LOCATIONS: [&str; 5] = ["file", "filesystem", "folder", "background", "drive"];
+pub const LOCATIONS: [&str; 6] = [
+    "desktop",
+    "file",
+    "filesystem",
+    "folder",
+    "background",
+    "drive",
+];
 pub fn location_root(location: &str) -> Option<&'static str> {
     match location {
+        "desktop" => Some("DesktopBackground"),
         "file" => Some("*"),
         "filesystem" => Some("AllFilesystemObjects"),
         "folder" => Some("Directory"),

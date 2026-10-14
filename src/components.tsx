@@ -17,6 +17,7 @@ import type { MenuEntry, Scope } from './types';
 export function ScopeIcon({ scope }: { scope: Scope }) {
   const Component = {
     all: LayoutGrid,
+    desktop: PanelTop,
     file: File,
     filesystem: LayoutGrid,
     folder: Folder,

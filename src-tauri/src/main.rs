@@ -1,5 +1,6 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 
+mod capture;
 mod elevation;
 mod journal;
 mod model;
@@ -9,6 +10,17 @@ mod service;
 use std::sync::{Arc, Mutex};
 use tauri::Manager;
 type Shared = Arc<Mutex<service::Service>>;
+
+#[tauri::command]
+async fn capture_menu(window: tauri::WebviewWindow) -> Result<capture::Capture, String> {
+    window.minimize().map_err(|e| e.to_string())?;
+    let result = tauri::async_runtime::spawn_blocking(capture::run_worker)
+        .await
+        .map_err(|e| e.to_string());
+    let _ = window.unminimize();
+    let _ = window.set_focus();
+    result?
+}
 
 #[tauri::command]
 async fn load_data(state: tauri::State<'_, Shared>) -> Result<service::AppData, String> {
@@ -65,6 +77,10 @@ async fn restore_operation(state: tauri::State<'_, Shared>, id: String) -> Resul
 
 fn main() {
     let args: Vec<_> = std::env::args().collect();
+    if args.get(1).map(String::as_str) == Some("--capture-menu") {
+        println!("{}", serde_json::to_string(&capture::observe()).unwrap());
+        return;
+    }
     if args.get(1).map(String::as_str) == Some("--elevated-helper") {
         if let Some(token) = args.get(2) {
             let _ = elevation::helper(token);
@@ -85,6 +101,7 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             load_data,
+            capture_menu,
             toggle_menu,
             add_menu,
             restore_operation

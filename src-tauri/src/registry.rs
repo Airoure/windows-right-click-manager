@@ -279,7 +279,7 @@ fn extension_source(clsid: &str) -> String {
         .open_subkey_with_flags(path, KEY_READ | KEY_WOW64_64KEY)
         .ok()
         .and_then(|key| key.get_value::<String, _>("").ok())
-        .map(|dll| source(&dll, "来源未确认"))
+        .map(|dll| source(&format!("\"{}\"", dll.trim_matches('"')), "来源未确认"))
         .unwrap_or_else(|| "来源未确认".into())
 }
 pub fn scan() -> ScanResult {
@@ -321,10 +321,17 @@ pub fn scan() -> ScanResult {
                             verb: name.clone(),
                         };
                         let cmd = if is_static { command(&s) } else { text(&s, "") };
-                        let label = [text(&s, "MUIVerb"), text(&s, "")]
-                            .into_iter()
-                            .find_map(|label| display_label(&label))
-                            .unwrap_or_else(|| name.clone());
+                        let label = [
+                            text(&s, "MUIVerb"),
+                            if is_static {
+                                text(&s, "")
+                            } else {
+                                String::new()
+                            },
+                        ]
+                        .into_iter()
+                        .find_map(|label| display_label(&label))
+                        .unwrap_or_else(|| name.clone());
                         let allowed = if is_static {
                             eligibility(&target, &s)
                         } else {
@@ -444,7 +451,7 @@ pub fn custom_snapshot(menu: &NewMenu) -> Result<KeySnapshot, String> {
     if menu.arguments.len() > 4096 || menu.arguments.chars().any(char::is_control) {
         return Err("参数过长或包含控制字符。".into());
     }
-    let token = if menu.scope == "background" {
+    let token = if ["desktop", "background"].contains(&menu.scope.as_str()) {
         "%V"
     } else {
         "%1"
