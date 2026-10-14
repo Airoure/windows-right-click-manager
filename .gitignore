@@ -22,8 +22,16 @@ src-tauri/gen/schemas/
 # Runtime data and registry exports
 runtime-data/
 backups/
+artifacts/
 *.reg
 *.log
+
+# Tauri icon generator also emits unused mobile and macOS artwork.
+src-tauri/icons/android/
+src-tauri/icons/ios/
+src-tauri/icons/*.icns
+src-tauri/icons/Square*Logo.png
+src-tauri/icons/StoreLogo.png
 
 # Local tooling and operating system files
 .idea/
