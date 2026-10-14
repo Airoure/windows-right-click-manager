@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light" />
+  <title>右键管理 · 界面原型</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="titlebar">
+      <div class="brand"><span class="brand-icon" data-icon="pointer"></span><strong>右键管理</strong><span class="version">预览版</span></div>
+      <div class="prototype-label"><span class="status-dot"></span>交互原型 · 示例数据</div>
+      <button class="icon-button" id="help-button" aria-label="查看原型说明" title="原型说明" data-icon="help"></button>
+    </header>
+    <div class="workspace">
+      <aside class="sidebar">
+        <div class="sidebar-label">菜单位置</div>
+        <nav id="scope-nav" aria-label="菜单位置"></nav>
+        <div class="sidebar-divider"></div>
+        <button class="nav-item" id="history-nav"><span data-icon="history"></span><span>操作历史</span><span class="nav-count" id="history-count">0</span></button>
+        <div class="sidebar-bottom"><div class="computer"><span data-icon="monitor"></span><div><strong>这台电脑</strong><small>Windows 10 · 本地管理</small></div></div><div class="local-note"><span data-icon="shield"></span>所有记录保存在本地</div></div>
+      </aside>
+      <main class="main">
+        <div class="page-heading"><div><div class="eyebrow" id="eyebrow">菜单管理 / 文件夹空白处</div><h1 id="page-title">文件夹空白处</h1><p id="page-description">在文件夹内空白位置右键时显示的菜单。</p></div><button class="button primary" id="add-button"><span data-icon="plus"></span>添加菜单</button></div>
+        <div id="menu-view">
+          <div class="toolbar"><label class="search"><span data-icon="search"></span><input id="search-input" type="search" placeholder="搜索菜单名称或来源程序" aria-label="搜索菜单" /><kbd>/</kbd></label><button class="button secondary" id="refresh-button"><span data-icon="refresh"></span>重新扫描</button></div>
+          <div class="list-topline"><div class="filters" id="filters" aria-label="状态筛选"><button data-filter="all" class="active">全部 <span id="filter-all"></span></button><button data-filter="enabled">已启用</button><button data-filter="disabled">已停用</button><button data-filter="readonly">仅查看</button></div><span class="list-count" id="list-count"></span></div>
+          <div class="column-head"><span>菜单名称</span><span>来源</span><span>状态</span></div>
+          <div id="menu-list" class="menu-list" aria-label="菜单列表"></div>
+          <div class="list-footer"><span data-icon="info"></span><span>停用后可随时恢复。系统内置菜单默认只提供查看。</span></div>
+        </div>
+        <div id="history-view" hidden></div>
+      </main>
+      <button class="detail-backdrop" id="detail-backdrop" aria-label="关闭菜单详情" tabindex="-1"></button>
+      <button class="icon-button detail-close" id="detail-close" aria-label="关闭菜单详情" data-icon="close"></button>
+      <aside class="inspector" id="inspector" aria-label="菜单详情"></aside>
+    </div>
+    <footer class="statusbar"><span><span class="status-dot"></span><span id="scan-status">示例扫描已完成</span></span><span>原型中的操作不会修改系统菜单</span></footer>
+  </div>
+  <div id="modal-root"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <script src="./app.js"></script>
+</body>
+</html>
