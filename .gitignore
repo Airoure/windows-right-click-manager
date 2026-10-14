@@ -1,0 +1,38 @@
+# JavaScript dependencies and build output
+node_modules/
+dist/
+.vite/
+coverage/
+*.tsbuildinfo
+
+# Rust and Tauri build output
+target/
+src-tauri/gen/schemas/
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Runtime data and registry exports
+runtime-data/
+backups/
+*.reg
+*.log
+
+# Local tooling and operating system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.tmp
+*.swp
+
+# Keep package-lock.json, other selected package-manager lockfiles,
+# and Cargo.lock under version control once the application is scaffolded.
