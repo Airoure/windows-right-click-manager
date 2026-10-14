@@ -55,4 +55,4 @@ cargo test --locked -j 2 --manifest-path src-tauri/Cargo.toml
 
 ## Git
 
-使用本地 `main` 分支管理，保留 npm 与 Cargo 锁文件。尚未连接 GitHub，开源许可证尚未选择。
+使用 `main` 分支管理，保留 npm 与 Cargo 锁文件。GitHub 私有仓库：[Airoure/windows-right-click-manager](https://github.com/Airoure/windows-right-click-manager)。开源许可证尚未选择。
